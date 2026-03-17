@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tennis Scoreboard</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    margin-top: 20px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin-top: 50px;
+}
+
+.player {
+    background: rgba(255,255,255,0.1);
+    padding: 30px;
+    border-radius: 20px;
+    width: 200px;
+    transition: transform 0.2s;
+}
+
+.player:hover {
+    transform: scale(1.05);
+}
+
+.score {
+    font-size: 50px;
+    margin: 20px 0;
+}
+
+.sets, .match {
+    margin: 5px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.p1 { background: cyan; }
+.p2 { background: orange; }
+
+.result {
+    margin-top: 30px;
+    font-size: 24px;
+    color: lime;
+}
+
+.animate {
+    animation: pop 0.2s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎾 Tennis Scoreboard</h1>
+
+<div class="container">
+
+    <div class="player" id="p1Box">
+        <input id="p1Name" placeholder="Player 1">
+        <div class="score" id="p1Game">0</div>
+        <div class="sets" id="p1Set">Set: 0</div>
+        <div class="match" id="p1Match">Sets Won: 0</div>
+        <button class="p1" onclick="score(0)">POINT</button>
+    </div>
+
+    <div class="player" id="p2Box">
+        <input id="p2Name" placeholder="Player 2">
+        <div class="score" id="p2Game">0</div>
+        <div class="sets" id="p2Set">Set: 0</div>
+        <div class="match" id="p2Match">Sets Won: 0</div>
+        <button class="p2" onclick="score(1)">POINT</button>
+    </div>
+
+</div>
+
+<div class="result" id="result"></div>
+
+<audio id="sound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
+<script>
+let game = [0,0];
+let set = [0,0];
+let match = [0,0];
+
+let deuce = false;
+let advantage = null;
+let tiebreak = false;
+let tb = [0,0];
+
+const points = ["0","15","30","40"];
+
+function playSound(){
+    document.getElementById("sound").play();
+}
+
+function animate(id){
+    let el = document.getElementById(id);
+    el.classList.add("animate");
+    setTimeout(()=>el.classList.remove("animate"),200);
+}
+
+function update(){
+    if(tiebreak){
+        p1Game.innerText = "TB " + tb[0];
+        p2Game.innerText = "TB " + tb[1];
+    }
+    else if(deuce){
+        if(advantage == null){
+            p1Game.innerText = "DEUCE";
+            p2Game.innerText = "DEUCE";
+        } else {
+            p1Game.innerText = advantage==0 ? "ADV" : "";
+            p2Game.innerText = advantage==1 ? "ADV" : "";
+        }
+    }
+    else{
+        p1Game.innerText = points[game[0]];
+        p2Game.innerText = points[game[1]];
+    }
+
+    p1Set.innerText = "Set: " + set[0];
+    p2Set.innerText = "Set: " + set[1];
+
+    p1Match.innerText = "Sets Won: " + match[0];
+    p2Match.innerText = "Sets Won: " + match[1];
+}
+
+function resetGame(){
+    game=[0,0];
+    deuce=false;
+    advantage=null;
+}
+
+function checkMatch(){
+    if(match[0]==2 || match[1]==2){
+        result.innerText = (match[0]==2 ? p1Name.value : p2Name.value) + " WINS THE MATCH!";
+        match=[0,0];
+    }
+}
+
+function checkSet(){
+    if(set[0]==6 && set[1]==6){
+        tiebreak=true;
+        return;
+    }
+
+    if(set[0]>=6 || set[1]>=6){
+        if(Math.abs(set[0]-set[1])>=2 || set[0]==7 || set[1]==7){
+            let winner = set[0]>set[1]?0:1;
+            match[winner]++;
+            result.innerText = (winner==0 ? p1Name.value : p2Name.value) + " wins the SET!";
+            set=[0,0];
+            resetGame();
+            checkMatch();
+        }
+    }
+}
+
+function score(player){
+    playSound();
+    animate(player==0?"p1Game":"p2Game");
+
+    let opp = 1-player;
+
+    if(tiebreak){
+        tb[player]++;
+        if(tb[player]>=7 && tb[player]-tb[opp]>=2){
+            set[player]++;
+            tb=[0,0];
+            tiebreak=false;
+            checkSet();
+        }
+        update();
+        return;
+    }
+
+    if(deuce){
+        if(advantage==null){
+            advantage=player;
+        } else if(advantage==player){
+            set[player]++;
+            resetGame();
+        } else {
+            advantage=null;
+        }
+        update();
+        checkSet();
+        return;
+    }
+
+    if(game[player]<3){
+        game[player]++;
+    } else {
+        if(game[opp]<3){
+            set[player]++;
+            resetGame();
+        } else {
+            deuce=true;
+        }
+    }
+
+    update();
+    checkSet();
+}
+
+update();
+</script>
+
+</body>
+</html>
